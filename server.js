@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const path = require('path');
 
 const app = express();
 const PORT = 3001;
@@ -9,6 +10,9 @@ const PORT = 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from public directory (for easy frontend development)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // HubSpot API configuration
 const HUBSPOT_API_BASE = 'https://api.hubapi.com';
@@ -190,7 +194,43 @@ app.get('/api/contacts/:contactId/deals', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`Test it: http://localhost:${PORT}/health`);
+const server = app.listen(PORT, () => {
+  console.log('\n✅ Server running successfully!');
+  console.log(`🌐 API available at: http://localhost:${PORT}`);
+  console.log(`📋 Health check: http://localhost:${PORT}/health`);
+  console.log(`📁 Static files served from: /public`);
+  console.log('\n💡 Using hot-reload? Run: npm run dev');
+  console.log('🛑 To stop server: Press Ctrl+C\n');
+});
+
+// Graceful shutdown handling
+const gracefulShutdown = (signal) => {
+  console.log(`\n⚠️  Received ${signal}, closing server gracefully...`);
+  
+  server.close(() => {
+    console.log('✅ Server closed successfully');
+    console.log('👋 Goodbye!\n');
+    process.exit(0);
+  });
+
+  // Force close after 10 seconds if graceful shutdown fails
+  setTimeout(() => {
+    console.error('❌ Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+};
+
+// Handle termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught errors
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('UNHANDLED_REJECTION');
 });

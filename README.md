@@ -24,7 +24,7 @@ npm install
 ### 2. Get Your HubSpot Access Token
 
 1. Sign up for a [free HubSpot account](https://offers.hubspot.com/free-trial)
-2. Navigate to **Settings** → **Integrations** → **Private Apps**
+2. Navigate to **Development** → **Legacy Apps**
 3. Click **Create a private app**
 4. Give it a name (e.g., "SA Assessment App")
 5. Go to the **Scopes** tab and enable:
@@ -41,35 +41,48 @@ cp .env.example .env
 ```
 
 Edit `.env` and add your HubSpot token:
+
 ```
 HUBSPOT_ACCESS_TOKEN=pat-na1-your-token-here
 ```
 
 ### 4. Start the Server
 
-```bash
-npm start
-```
+**For development (with hot-reloading):**
 
-Or for development with auto-reload:
 ```bash
 npm run dev
 ```
 
+This will automatically restart the server when you make changes to `server.js`.
+
+**For production:**
+
+```bash
+npm start
+```
+
 You should see:
+
 ```
-✅ Server running on http://localhost:3001
-Test it: http://localhost:3001/health
+✅ Server running successfully!
+🌐 API available at: http://localhost:3001
+📋 Health check: http://localhost:3001/health
+📁 Static files served from: /public
 ```
+
+**To stop the server:** Press `Ctrl+C` (the server will gracefully shut down)
 
 ### 5. Test the Server
 
 Open your browser or use curl:
+
 ```bash
 curl http://localhost:3001/health
 ```
 
 Should return:
+
 ```json
 {
   "status": "Server is running",
@@ -80,11 +93,13 @@ Should return:
 ## API Endpoints
 
 ### Health Check
+
 **GET** `/health`
 
 Check if the server is running.
 
 **Response:**
+
 ```json
 {
   "status": "Server is running",
@@ -95,11 +110,13 @@ Check if the server is running.
 ---
 
 ### Get Contacts
+
 **GET** `/api/contacts`
 
 Fetch all contacts from HubSpot (limited to 50).
 
 **Response:**
+
 ```json
 {
   "results": [
@@ -120,11 +137,13 @@ Fetch all contacts from HubSpot (limited to 50).
 ---
 
 ### Create Contact
+
 **POST** `/api/contacts`
 
 Create a new contact in HubSpot.
 
 **Request Body:**
+
 ```json
 {
   "properties": {
@@ -138,6 +157,7 @@ Create a new contact in HubSpot.
 ```
 
 **Response:**
+
 ```json
 {
   "id": "12345",
@@ -153,11 +173,13 @@ Create a new contact in HubSpot.
 ---
 
 ### Get All Deals
+
 **GET** `/api/deals`
 
 Fetch all deals from HubSpot (limited to 50).
 
 **Response:**
+
 ```json
 {
   "results": [
@@ -176,11 +198,13 @@ Fetch all deals from HubSpot (limited to 50).
 ---
 
 ### Create Deal
+
 **POST** `/api/deals`
 
 Create a new deal in HubSpot and associate it with a contact.
 
 **Request Body:**
+
 ```json
 {
   "dealProperties": {
@@ -193,6 +217,7 @@ Create a new deal in HubSpot and associate it with a contact.
 ```
 
 **Response:**
+
 ```json
 {
   "id": "67890",
@@ -207,16 +232,19 @@ Create a new deal in HubSpot and associate it with a contact.
 ---
 
 ### Get Deals for Contact
+
 **GET** `/api/contacts/:contactId/deals`
 
 Get all deals associated with a specific contact.
 
 **Example:**
+
 ```
 GET /api/contacts/12345/deals
 ```
 
 **Response:**
+
 ```json
 {
   "results": [
@@ -235,6 +263,7 @@ GET /api/contacts/12345/deals
 ## Testing with cURL
 
 ### Create a contact:
+
 ```bash
 curl -X POST http://localhost:3001/api/contacts \
   -H "Content-Type: application/json" \
@@ -248,11 +277,13 @@ curl -X POST http://localhost:3001/api/contacts \
 ```
 
 ### Get all contacts:
+
 ```bash
 curl http://localhost:3001/api/contacts
 ```
 
 ### Create a deal:
+
 ```bash
 curl -X POST http://localhost:3001/api/deals \
   -H "Content-Type: application/json" \
@@ -269,6 +300,7 @@ curl -X POST http://localhost:3001/api/deals \
 ## Common Deal Stages
 
 For the Breezy use case, you can use these standard HubSpot deal stages:
+
 - `appointmentscheduled` - Trial started
 - `qualifiedtobuy` - Active trial user
 - `closedwon` - Converted to paid subscription
@@ -277,6 +309,7 @@ For the Breezy use case, you can use these standard HubSpot deal stages:
 ## Error Handling
 
 All endpoints return errors in this format:
+
 ```json
 {
   "error": "Human-readable error message",
@@ -285,6 +318,7 @@ All endpoints return errors in this format:
 ```
 
 Common errors:
+
 - **401 Unauthorized**: Check your `HUBSPOT_ACCESS_TOKEN` in `.env`
 - **403 Forbidden**: Your private app may not have the required scopes
 - **404 Not Found**: Contact or deal ID doesn't exist
@@ -304,6 +338,7 @@ Common errors:
 ## Your Task
 
 Build a frontend application that:
+
 1. Displays contacts from `GET /api/contacts`
 2. Creates contacts via `POST /api/contacts`
 3. Creates deals via `POST /api/deals`
@@ -312,19 +347,51 @@ Build a frontend application that:
 
 You can build your frontend in the `/public` folder or in a separate directory.
 
-## Support
+## Troubleshooting
 
-If you encounter issues:
-1. Check that your `.env` file has a valid `HUBSPOT_ACCESS_TOKEN`
-2. Verify your HubSpot Private App has all required scopes
-3. Check the console logs for detailed error messages
-4. Test endpoints with curl to isolate frontend vs backend issues
+### Port 3001 Already in Use
 
-## Notes
+If you see an error like `EADDRINUSE: address already in use ::1:3001`:
 
-- This server runs on port 3001
-- CORS is enabled for all origins (development only)
-- The server validates the HubSpot token on startup
-- All HubSpot API calls are proxied through this server for security
+**On Mac/Linux:**
+
+```bash
+# Find the process using port 3001
+lsof -ti:3001
+
+# Kill the process
+kill -9 $(lsof -ti:3001)
+```
+
+**On Windows:**
+
+```bash
+# Find the process
+netstat -ano | findstr :3001
+
+# Kill it (replace PID with the number from above)
+taskkill /PID <PID> /F
+```
+
+**Note:** The updated `server.js` now includes graceful shutdown, so pressing `Ctrl+C` should properly close the port.
+
+### Other Common Issues
+
+1. **401 Unauthorized**: Check that your `.env` file has a valid `HUBSPOT_ACCESS_TOKEN`
+2. **403 Forbidden**: Your HubSpot Private App may not have the required scopes
+3. **404 Not Found**: Contact or deal ID doesn't exist in your HubSpot portal
+4. **Module not found**: Run `npm install` to install dependencies
+5. Check the console logs for detailed error messages
+6. Test endpoints with curl to isolate frontend vs backend issues
+
+## Features
+
+- **Graceful Shutdown**: Server properly closes connections when stopped (Ctrl+C)
+- **Hot Reloading**: Use `npm run dev` for automatic restart on file changes
+- **Static File Serving**: Files in `/public` are automatically served
+- **Port 3001**: Runs on localhost:3001 by default
+- **CORS Enabled**: All origins allowed (development only)
+- **Token Validation**: Server won't start without valid HubSpot token
+- **Comprehensive Error Handling**: Detailed error messages for debugging
 
 Good luck with your assessment!
