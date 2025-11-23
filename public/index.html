@@ -398,6 +398,146 @@
             opacity: 0.5;
         }
 
+        /* AI Insights Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eaf0f6;
+        }
+
+        .modal-header h3 {
+            color: #33475b;
+            font-size: 24px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #6b7c93;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #33475b;
+        }
+
+        .insights-section {
+            margin: 20px 0;
+            padding: 16px;
+            background: #f5f8fa;
+            border-radius: 6px;
+            border-left: 4px solid #ff5c35;
+        }
+
+        .insights-label {
+            font-size: 12px;
+            color: #6b7c93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .insights-value {
+            font-size: 16px;
+            color: #33475b;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .insights-description {
+            font-size: 14px;
+            color: #6b7c93;
+            line-height: 1.6;
+        }
+
+        .expansion-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .expansion-low {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .expansion-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .expansion-high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .ai-loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .ai-loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ff5c35;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .dashboard {
@@ -447,6 +587,22 @@
 
         <!-- Alert Container -->
         <div id="alert-container"></div>
+
+        <!-- AI Insights Modal -->
+        <div id="ai-insights-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>AI Customer Insights</h3>
+                    <button class="modal-close" onclick="closeInsightsModal()">&times;</button>
+                </div>
+                <div id="insights-body">
+                    <div class="ai-loading">
+                        <div class="ai-loading-spinner"></div>
+                        <div>Analyzing customer data...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Main Dashboard -->
         <div class="dashboard">
@@ -586,6 +742,7 @@
                                 <th>Deals</th>
                                 <th>Created</th>
                                 <th>Actions</th>
+                                <th>AI Insights</th>
                             </tr>
                         </thead>
                         <tbody id="contacts-tbody">
@@ -690,7 +847,7 @@
                 // Display contacts in table with placeholder for deals
                 tbody.innerHTML = '';
                 if (allContacts.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-state-icon">📭</div><div>No contacts found. Create your first customer above!</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">📭</div><div>No contacts found. Create your first customer above!</div></td></tr>';
                 } else {
                     allContacts.forEach(contact => {
                         const row = document.createElement('tr');
@@ -715,6 +872,9 @@
                             <td>${created}</td>
                             <td>
                                 <a href="${contact.url || '#'}" target="_blank" class="link-hubspot">View in HubSpot →</a>
+                            </td>
+                            <td>
+                                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; white-space: nowrap;" onclick="getAIInsights('${contact.id}')">AI Insights</button>
                             </td>
                         `;
                         tbody.appendChild(row);
@@ -898,6 +1058,103 @@
             const amount = selectedOption.getAttribute('data-amount');
             if (amount) {
                 document.getElementById('amount').value = amount;
+            }
+        });
+
+        // AI Insights Functions
+        async function getAIInsights(contactId) {
+            const modal = document.getElementById('ai-insights-modal');
+            const insightsBody = document.getElementById('insights-body');
+            
+            // Show modal with loading state
+            modal.classList.add('active');
+            insightsBody.innerHTML = `
+                <div class="ai-loading">
+                    <div class="ai-loading-spinner"></div>
+                    <div>Analyzing customer data...</div>
+                </div>
+            `;
+            
+            try {
+                // Find contact data
+                const contact = allContacts.find(c => c.id === contactId);
+                if (!contact) throw new Error('Contact not found');
+                
+                // Get deals for this contact
+                const deals = await loadContactDeals(contactId);
+                
+                // Call AI insights endpoint
+                const response = await fetch('/api/ai/insights', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contact: contact.properties,
+                        deals: deals
+                    }),
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.details?.message || 'Failed to generate insights');
+                }
+                
+                const insights = await response.json();
+                
+                // Display insights
+                const expansionClass = `expansion-${insights.expansionPotential.toLowerCase()}`;
+                insightsBody.innerHTML = `
+                    <div class="insights-section">
+                        <div class="insights-label">Marketing Segment</div>
+                        <div class="insights-value">${insights.segment}</div>
+                    </div>
+                    
+                    <div class="insights-section">
+                        <div class="insights-label">Current Status</div>
+                        <div class="insights-description">${insights.status}</div>
+                    </div>
+                    
+                    <div class="insights-section">
+                        <div class="insights-label">Recommended Action</div>
+                        <div class="insights-description">${insights.recommendedAction}</div>
+                    </div>
+                    
+                    <div class="insights-section">
+                        <div class="insights-label">Expansion Potential</div>
+                        <div class="insights-value">
+                            ${insights.expansionPotential}
+                            <span class="expansion-badge ${expansionClass}">${insights.expansionPotential}</span>
+                        </div>
+                        <div class="insights-description">${insights.expansionReason}</div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding: 12px; background: #e8f5e9; border-radius: 4px; font-size: 13px; color: #2e7d32;">
+                        💡 <strong>Pro Tip:</strong> These insights are powered by AI analysis of customer data, deal history, and behavioral patterns.
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error getting AI insights:', error);
+                insightsBody.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #721c24;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Failed to Generate Insights</div>
+                        <div style="font-size: 14px; color: #6b7c93;">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function closeInsightsModal() {
+            const modal = document.getElementById('ai-insights-modal');
+            modal.classList.remove('active');
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('ai-insights-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'ai-insights-modal') {
+                closeInsightsModal();
             }
         });
 

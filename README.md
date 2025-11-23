@@ -2,7 +2,7 @@
 
 > A proof-of-concept demonstrating HubSpot CRM integration for Breezy's smart thermostat subscription platform
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Project Overview](#project-overview)
 - [Setup Instructions](#setup-instructions)
@@ -13,7 +13,7 @@
 
 ---
 
-## 🎯 Project Overview
+## Project Overview
 
 This POC demonstrates how Breezy's platform would integrate with HubSpot to:
 
@@ -72,19 +72,31 @@ This POC demonstrates how Breezy's platform would integrate with HubSpot to:
      - `crm.objects.deals.write`
    - Copy the access token
 
-4. **Set up environment variables**
+4. **Get Anthropic API key (optional - for AI Insights feature)**
+
+   - Sign up at [Anthropic Console](https://console.anthropic.com/)
+   - Navigate to API Keys section
+   - Create a new API key
+   - Copy the key (starts with `sk-ant-api03-...`)
+   
+   *Note: If you skip this step, the AI Insights feature won't work, but all other features will function normally.*
+
+5. **Set up environment variables**
 
    ```bash
    cp .env.example .env
    ```
 
-   Edit `.env` and add your token:
+   Edit `.env` and add your tokens:
 
    ```
    HUBSPOT_ACCESS_TOKEN=your_token_here
+   ANTHROPIC_API_KEY=your_anthropic_key_here
    ```
 
-5. **Start the server**
+   **Note**: The Anthropic API key is optional. If not provided, the AI Insights feature will not be available, but all other features will work normally.
+
+6. **Start the server**
 
    ```bash
    npm start
@@ -93,11 +105,11 @@ This POC demonstrates how Breezy's platform would integrate with HubSpot to:
    You should see:
 
    ```
-   ✅ Server running successfully!
-   🌐 API available at: http://localhost:3001
+   Server running successfully!
+   API available at: http://localhost:3001
    ```
 
-6. **Open the application**
+7. **Open the application**
 
    Navigate to `http://localhost:3001` in your browser.
 
@@ -106,10 +118,11 @@ This POC demonstrates how Breezy's platform would integrate with HubSpot to:
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `HUBSPOT_ACCESS_TOKEN` | HubSpot Private App access token | Yes |
+| `ANTHROPIC_API_KEY` | Anthropic Claude API key (for AI insights feature) | Optional |
 
 ---
 
-## 🧪 Testing the Integration
+## Testing the Integration
 
 ### Test Flow: Customer Purchase → Trial → Conversion
 
@@ -122,8 +135,8 @@ This POC demonstrates how Breezy's platform would integrate with HubSpot to:
    - Phone: `555-123-4567` (optional)
    - Company: `Acme Inc` (optional)
 2. Click "Create Contact & Sync to HubSpot"
-3. ✅ Success message appears
-4. ✅ Contact appears in the table below
+3. Success message appears
+4. Contact appears in the table below
 
 **Step 2: Create a Deal (Record Subscription Conversion)**
 
@@ -134,8 +147,8 @@ This POC demonstrates how Breezy's platform would integrate with HubSpot to:
    - Amount: Auto-fills to `99`
    - Deal Stage: `Closed Won (Converted to Paid)`
 2. Click "Create Subscription Deal"
-3. ✅ Success message appears
-4. ✅ Deal appears under contact in the table
+3. Success message appears
+4. Deal appears under contact in the table
 
 **Step 3: Verify in HubSpot**
 
@@ -154,9 +167,13 @@ This POC demonstrates how Breezy's platform would integrate with HubSpot to:
 
 ---
 
-## 🏗️ HubSpot Data Architecture
+## HubSpot Data Architecture
 
 ### Entity Relationship Diagram
+
+![Breezy HubSpot ERD](./docs/erd.png)
+
+*Interactive diagram below (renders on GitHub):*
 
 ```mermaid
 erDiagram
@@ -273,12 +290,84 @@ Contact: sarah@example.com
 
 ---
 
-## 🤖 AI Usage Documentation
+## AI Feature: Customer Insights Generator
+
+### What It Does
+
+Analyzes customer data and provides actionable marketing recommendations powered by Claude AI (Anthropic).
+
+**Click "AI Insights" on any contact to get:**
+- **Marketing Segment** - Which campaign bucket they belong to
+- **Current Status** - Brief assessment of where they are
+- **Recommended Action** - Specific next step with timing
+- **Expansion Potential** - Likelihood to purchase additional thermostats
+
+### Why This Feature?
+
+Breezy asked: *"Show us one way AI could help us be smarter about our customer data."*
+
+This feature directly addresses their business needs:
+
+| Business Need | How AI Addresses It |
+|---------------|---------------------|
+| "Create targeted marketing campaigns" | AI recommends which specific campaign to send |
+| "Based on hardware ownership and subscription status" | AI analyzes all contact properties and deals |
+| "Identify expansion opportunities" | AI flags multi-thermostat potential based on company data |
+| "Be smarter about customer data" | Transforms raw data into actionable insights |
+
+### Example Output
+
+```
+AI Customer Insights
+
+Segment: Trial User - High Intent
+
+Status: Customer created account recently with no subscription yet
+
+Recommended Action:
+Send "Welcome & Trial Benefits" email campaign within 48 hours.
+Highlight energy savings calculator and remote access features.
+
+Expansion Potential: Medium 
+Reason: Has company listed (Acme Inc) - possible multi-unit or 
+office installation opportunity. Consider B2B outreach.
+```
+
+### Technical Implementation
+
+- **Model**: Claude 3 Haiku (fast, cost-effective for real-time analysis)
+- **Endpoint**: `POST /api/ai/insights`
+- **Input**: Contact properties + associated deals
+- **Output**: Structured JSON with segment, action, and expansion score
+- **Latency**: ~1-2 seconds per analysis
+
+### When to Use AI vs Traditional Rules
+
+| Scenario | Use AI | Use Rules |
+|----------|--------|-----------|
+| Nuanced recommendations requiring context | ✅ | |
+| Natural language insights for humans | ✅ | |
+| Pattern recognition across multiple factors | ✅ | |
+| Simple if/then logic (e.g., trial expired?) | | ✅ |
+| Binary flags (e.g., has subscription?) | | ✅ |
+| High-volume, low-latency operations | | ✅ |
+
+### Business Value
+
+1. **Saves Time**: Marketing team doesn't manually segment customers
+2. **Increases Conversions**: Timely, personalized recommendations
+3. **Identifies Revenue**: Flags expansion opportunities automatically
+4. **Scalable**: Analyzes unlimited customers instantly
+
+---
+
+## AI Usage Documentation
 
 ### Tools Used
 
 | Tool | Purpose |
 |------|---------|
+| Cursor AI | AI-powered code editor with integrated Claude |
 | Claude (Anthropic) | Architecture planning, code review, documentation |
 | GitHub Copilot | Code completion and suggestions |
 
@@ -286,11 +375,12 @@ Contact: sarah@example.com
 
 | Task | Tool | Time Saved |
 |------|------|------------|
-| Architecture planning & ERD design | Claude | ~45 min |
-| HTML/CSS structure | Copilot | ~30 min |
-| JavaScript async patterns | Copilot | ~20 min |
-| README documentation | Claude | ~30 min |
-| Debugging API issues | Claude | ~15 min |
+| Architecture planning & ERD design | Cursor + Claude | ~45 min |
+| HTML/CSS structure | Cursor + Copilot | ~30 min |
+| JavaScript async patterns | Cursor + Copilot | ~20 min |
+| AI insights feature implementation | Cursor + Claude | ~25 min |
+| README documentation | Cursor + Claude | ~30 min |
+| Debugging API issues | Cursor + Claude | ~15 min |
 
 ### What I Learned
 
@@ -303,16 +393,16 @@ Contact: sarah@example.com
 
 **Strengths:**
 
-- ✅ Rapid prototyping (reduced development time by ~50%)
-- ✅ Best practices for HubSpot integration patterns
-- ✅ Documentation structure and clarity
-- ✅ Debugging obscure API error messages
+- Rapid prototyping (reduced development time by ~50%)
+- Best practices for HubSpot integration patterns
+- Documentation structure and clarity
+- Debugging obscure API error messages
 
 **Limitations:**
 
-- ❌ Required verification against HubSpot docs for API specifics
-- ❌ Business decisions (trial strategy, data model) required human judgment
-- ❌ Some suggestions needed adaptation for this specific use case
+- Required verification against HubSpot docs for API specifics
+- Business decisions (trial strategy, data model) required human judgment
+- Some suggestions needed adaptation for this specific use case
 
 ### AI vs Traditional Approach
 
@@ -326,7 +416,7 @@ Contact: sarah@example.com
 
 ---
 
-## 🎨 Design Decisions
+## Design Decisions
 
 ### Technical Choices
 
@@ -378,7 +468,7 @@ Contact: sarah@example.com
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 hs-solution-architect-tech-assignment/
@@ -393,7 +483,7 @@ hs-solution-architect-tech-assignment/
 
 ---
 
-## 🚀 Future Enhancements
+## Future Enhancements
 
 ### Phase 2: Production Ready
 
@@ -411,8 +501,8 @@ hs-solution-architect-tech-assignment/
 
 ---
 
-## 📞 Contact
+## Contact
 
 Built for HubSpot Solutions Architect Technical Assessment
 
-Questions? Contact: Emmanuel Afolayan (tobafo@gmail.com)
+Questions? Contact: Naomi Awoleye (nawoleye@hubspot.com)

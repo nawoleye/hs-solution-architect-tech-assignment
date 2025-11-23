@@ -193,6 +193,63 @@ app.get('/api/contacts/:contactId/deals', async (req, res) => {
   }
 });
 
+// AI Customer Insights endpoint
+app.post('/api/ai/insights', async (req, res) => {
+  try {
+    const { contact, deals } = req.body;
+    
+    // Build analysis prompt
+    const prompt = `You are a marketing analyst for Breezy, a smart thermostat company.
+
+Analyze this customer and provide actionable insights:
+
+Customer Data:
+- Name: ${contact.firstname} ${contact.lastname}
+- Email: ${contact.email}
+- Company: ${contact.company || 'None'}
+- Phone: ${contact.phone || 'Not provided'}
+- Created: ${contact.createdate}
+- Subscriptions: ${deals.length > 0 ? deals.map(d => `${d.properties.dealname} ($${d.properties.amount}, ${d.properties.dealstage})`).join(', ') : 'No subscriptions yet'}
+
+Provide insights in this EXACT JSON format (no markdown, just JSON):
+{
+  "segment": "One of: Trial User - High Intent | Active Subscriber | New Customer - No Subscription | Expansion Target | At-Risk",
+  "status": "Brief 1-sentence status",
+  "recommendedAction": "Specific marketing action with timing",
+  "expansionPotential": "Low, Medium, or High",
+  "expansionReason": "Why you rated expansion potential this way"
+}`;
+
+    const response = await axios.post(
+      'https://api.anthropic.com/v1/messages',
+      {
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 400,
+        messages: [{ role: 'user', content: prompt }]
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        }
+      }
+    );
+
+    // Parse AI response
+    const aiText = response.data.content[0].text;
+    const insights = JSON.parse(aiText);
+    
+    res.json(insights);
+  } catch (error) {
+    console.error('AI Insights Error:', error.response?.data || error.message);
+    res.status(500).json({
+      error: 'Failed to generate AI insights',
+      details: error.response?.data || error.message
+    });
+  }
+});
+
 // Start server
 const server = app.listen(PORT, () => {
   console.log('\n✅ Server running successfully!');
